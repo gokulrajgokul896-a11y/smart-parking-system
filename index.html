@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Smart Parking</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#e9ebee;--panel:#f7f8f9;--ink:#1c2128;--mute:#5d6672;--line:#c3c9d0;--free:#1f7a4d;--res:#c98a00;--occ:#b3382c;--blue:#1456c0;--onblue:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1f24;--panel:#252a31;--ink:#e8ebef;--mute:#98a1ad;--line:#414954;--free:#4cc38a;--res:#e8b23a;--occ:#f0776b;--blue:#6ea4ff;--onblue:#0d1b33}}
+:root[data-theme="dark"]{--bg:#1b1f24;--panel:#252a31;--ink:#e8ebef;--mute:#98a1ad;--line:#414954;--free:#4cc38a;--res:#e8b23a;--occ:#f0776b;--blue:#6ea4ff;--onblue:#0d1b33}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Barlow,system-ui,sans-serif}
+h1,h2,h3{font-family:"Barlow Condensed","Arial Narrow",sans-serif;letter-spacing:.01em;margin:0}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;background:var(--blue);color:var(--onblue)}
+header h1{font-size:28px}
+nav{display:flex;gap:6px;padding:10px 18px;overflow-x:auto;border-bottom:1px solid var(--line)}
+nav button,.btn{font:600 15px Barlow,sans-serif;border:1.5px solid var(--ink);background:transparent;color:var(--ink);padding:8px 14px;border-radius:4px;cursor:pointer}
+nav button[aria-selected="true"],.btn.p{background:var(--ink);color:var(--bg)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+main{max-width:980px;margin:0 auto;padding:18px}
+.lot{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:16px;margin-bottom:18px}
+.lot-h{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px}
+.lot-h h2{font-size:26px}.mute{color:var(--mute)}
+.count{font:700 30px "Barlow Condensed",sans-serif}
+.bays{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));border-top:3px solid var(--ink);margin-top:12px}
+.bay{height:92px;border:0;border-left:2px solid var(--ink);border-bottom:2px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding:6px 2px;font:600 15px Barlow,sans-serif;position:relative}
+.bays .bay:last-child{border-right:2px solid var(--ink)}
+.bay .car{width:70%;height:38px;border-radius:8px 8px 4px 4px;margin-bottom:4px}
+.bay.free{color:var(--free)}.bay.free:hover{background:color-mix(in srgb,var(--free) 14%,transparent)}
+.bay.res .car{background:var(--res)}.bay.occ .car{background:var(--occ)}
+.bay.res,.bay.occ{cursor:default}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;margin:6px 0 16px}
+.dot{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+table{width:100%;border-collapse:collapse}
+.tw{overflow-x:auto}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+dialog{border:2px solid var(--ink);border-radius:6px;background:var(--panel);color:var(--ink);max-width:340px;width:calc(100% - 32px)}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+label{display:block;font-weight:600;margin:12px 0 4px}
+input,select{width:100%;padding:9px;font:inherit;border:1.5px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink)}
+.row{display:flex;gap:8px;margin-top:16px}
+.stat{font:700 44px "Barlow Condensed",sans-serif}
+.note{font-size:14px;color:var(--mute);margin-top:24px}
+
+.stripe{height:10px;background:repeating-linear-gradient(-45deg,#f2c230 0 14px,#1c2128 14px 28px)}
+.hero{background:#2b3038;color:#fff;border-radius:8px;padding:28px 22px 40px;position:relative;overflow:hidden;display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+.hero:after{content:"";position:absolute;left:0;right:0;bottom:14px;height:4px;background:repeating-linear-gradient(90deg,#f2c230 0 34px,transparent 34px 68px)}
+.psign{width:96px;height:96px;background:#1456c0;border:5px solid #fff;border-radius:14px;display:grid;place-items:center;font:700 68px "Barlow Condensed",sans-serif;flex:none}
+.hero h2{font-size:clamp(34px,7vw,56px);line-height:1}
+.hero p{margin:8px 0 18px;max-width:46ch;color:#c9d0d9}
+.hero .btn{background:#f2c230;color:#1c2128;border-color:#f2c230}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin:18px 0}
+.stats div{background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--blue);padding:10px 12px;border-radius:4px}
+.stats b{display:block;font:700 38px "Barlow Condensed",sans-serif}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.cards article{background:var(--panel);border:1px solid var(--line);padding:14px;border-radius:4px;border-top:6px solid var(--res)}
+.cards article:nth-child(3n+2){border-top-color:var(--blue)}.cards article:nth-child(3n){border-top-color:var(--free)}
+.cards h3{font-size:22px}.cards p{margin:4px 0 0;color:var(--mute);font-size:15px}
+.brow{display:flex;align-items:center;gap:10px;margin:8px 0}
+.brow span:first-child{width:130px;flex:none}
+.bar{height:22px;background:var(--line);border-radius:3px;flex:1;overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+details{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:10px 14px;margin-bottom:8px}
+summary{font-weight:600;cursor:pointer}
+.tk{border:2px dashed var(--ink);padding:14px;border-radius:6px;text-align:center}
+.tk svg{width:140px;height:140px;margin:8px auto;display:block;background:#fff;padding:6px}
+.ev{color:var(--res)}
+</style>
+</head>
+<body>
+<header><h1>Smart Parking</h1><span><span id="clock" style="opacity:.85"></span> <button class="btn" id="th" style="color:inherit;border-color:currentColor;padding:4px 10px" aria-label="Toggle dark mode">◐</button></span></header><div class="stripe"></div>
+<nav role="tablist" id="tabs">
+<button role="tab" data-t="home" aria-selected="true">Home</button><button role="tab" data-t="bays" aria-selected="false">Live bays</button>
+<button role="tab" data-t="mine" aria-selected="false">Bookings</button>
+<button role="tab" data-t="rates" aria-selected="false">Rates</button><button role="tab" data-t="insights" aria-selected="false">Insights</button><button role="tab" data-t="help" aria-selected="false">Help</button><button role="tab" data-t="admin" aria-selected="false">Admin</button>
+</nav>
+<main id="view"></main>
+<dialog id="dlg"><form method="dialog" id="f"></form></dialog>
+<script>
+var KEY="smartparking.v1",tab="home",S;
+function seed(){var s=[];for(var i=1;i<=12;i++)s.push({n:"A"+i,s:"free"});var t=[];for(i=1;i<=8;i++)t.push({n:"B"+i,s:"free"});
+return{lots:[{id:1,name:"City Centre Garage",loc:"Level 1, Market Street",rate:30,slots:s},{id:2,name:"Station Lot",loc:"North entrance",rate:20,slots:t}],bk:[],nid:1}}
+function load(){try{var r=localStorage.getItem(KEY);S=r?JSON.parse(r):seed()}catch(e){S=seed()}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function esc(x){return String(x).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function lot(id){return S.lots.filter(function(l){return l.id==id})[0]}
+function slot(b){var l=lot(b.lot);return l&&l.slots.filter(function(s){return s.n==b.slot})[0]}
+function fmt(t){return t?new Date(t).toLocaleString([], {dateStyle:"short",timeStyle:"short"}):"-"}
+
+function isEV(n){return parseInt(n.slice(1))%4==0}
+function rateOf(l,n){return l.rate+(isEV(n)?10:0)}
+function stats(){var f=0,o=0;S.lots.forEach(function(l){l.slots.forEach(function(x){if(x.s=="free")f++;else o++})});
+var rev=S.bk.filter(function(b){return b.st=="Completed"}).reduce(function(a,b){return a+b.fee},0);return{f:f,o:o,rev:rev}}
+function home(){var k=stats();
+return '<div class="hero"><div class="psign">P</div><div><h2>Find a bay.<br>Skip the circling.</h2><p>See every bay in real time, reserve before you arrive, and pay only for the hours you use.</p><button class="btn" data-t="bays">Find a bay</button></div></div>'+
+'<div class="stats"><div><b>'+S.lots.length+'</b>lots</div><div><b>'+k.f+'</b>bays free</div><div><b>'+k.o+'</b>bays taken</div><div><b>₹'+k.rev+'</b>collected</div></div>'+
+'<div class="cards"><article><h3>Live bay map</h3><p>Every bay shows free, reserved or occupied.</p></article><article><h3>Reserve ahead</h3><p>Hold a bay with your vehicle number.</p></article><article><h3>Digital ticket</h3><p>Show a scannable ticket at the gate.</p></article><article><h3>⚡ EV charging bays</h3><p>Every 4th bay has a charger, ₹10 extra per hour.</p></article><article><h3>Daily cap</h3><p>You never pay for more than 8 hours.</p></article><article><h3>Insights</h3><p>Occupancy and revenue for each lot.</p></article></div>'}
+function rates(){var o=S.lots.map(function(l){return '<option value="'+l.id+'">'+esc(l.name)+'</option>'}).join('');
+var h='<h2 style="font-size:30px">Rates</h2><div class="tw"><table><tr><th>Lot</th><th>Standard</th><th>⚡ EV bay</th><th>Daily cap</th></tr>';
+S.lots.forEach(function(l){h+='<tr><td>'+esc(l.name)+'</td><td>₹'+l.rate+'/h</td><td>₹'+(l.rate+10)+'/h</td><td>₹'+l.rate*8+'</td></tr>'});
+return h+'</table></div><h3 style="font-size:24px;margin:22px 0 4px">Fee estimator</h3><div style="max-width:340px"><label>Lot</label><select id="elot">'+o+'</select><label>Hours</label><input id="ehr" type="number" min="1" value="3"><label><input id="eev" type="checkbox" style="width:auto"> EV bay</label><div class="stat" id="eout"></div></div>'}
+function est(){var l=lot(document.getElementById("elot").value),h=Math.min(8,Math.max(1,+document.getElementById("ehr").value||1));
+document.getElementById("eout").textContent="₹"+h*(l.rate+(document.getElementById("eev").checked?10:0))}
+function insights(){var h='<h2 style="font-size:30px">Insights</h2><h3 style="font-size:22px;margin-top:10px">Occupancy by lot</h3>';
+S.lots.forEach(function(l){var n=l.slots.length,r=l.slots.filter(function(x){return x.s=="res"}).length,o=l.slots.filter(function(x){return x.s=="occ"}).length;
+h+='<div class="brow"><span>'+esc(l.name)+'</span><div class="bar"><i style="width:'+o/n*100+'%;background:var(--occ)"></i><i style="width:'+r/n*100+'%;background:var(--res)"></i></div><span>'+Math.round((o+r)/n*100)+'%</span></div>'});
+h+='<h3 style="font-size:22px;margin-top:22px">Revenue by lot</h3>';
+var by=S.lots.map(function(l){return{n:l.name,v:S.bk.filter(function(b){return b.st=="Completed"&&b.lot==l.id}).reduce(function(a,b){return a+b.fee},0)}}),m=Math.max.apply(null,by.map(function(x){return x.v}).concat([1]));
+by.forEach(function(x){h+='<div class="brow"><span>'+esc(x.n)+'</span><div class="bar"><i style="width:'+x.v/m*100+'%;background:var(--blue)"></i></div><span>₹'+x.v+'</span></div>'});
+var c={};S.bk.forEach(function(b){c[b.st]=(c[b.st]||0)+1});
+return h+'<h3 style="font-size:22px;margin-top:22px">Bookings by status</h3><p class="mute">'+(S.bk.length?Object.keys(c).map(function(k){return k+": "+c[k]}).join("   "):"No bookings yet.")+'</p>'}
+function help(){var q=[["How do I park?","Open Live bays, tap a free bay, enter your vehicle number and hours. Then check in when you arrive."],["How is the fee worked out?","Hours are rounded up with a 1 hour minimum, and capped at 8 hours a day."],["What are EV bays?","Bays marked ⚡ have a charger and cost ₹10 more per hour."],["Can I cancel?","Yes. Cancel any booking before you check in and the bay is freed."],["Where is my ticket?","Bookings has a Ticket button. Show it at the gate."]];
+return '<h2 style="font-size:30px;margin-bottom:10px">Help</h2>'+q.map(function(x){return '<details><summary>'+x[0]+'</summary><p>'+x[1]+'</p></details>'}).join('')}
+function qr(seed){var x=0,i;for(i=0;i<seed.length;i++)x=(x*31+seed.charCodeAt(i))>>>0;var r='';for(var y=0;y<11;y++)for(var z=0;z<11;z++){var cn=(y<3&&z<3)||(y<3&&z>7)||(y>7&&z<3);x=(x*1103515245+12345)>>>0;if(cn||(x>>>16)%2)r+='<rect x="'+z*10+'" y="'+y*10+'" width="10" height="10" fill="#000"/>'}return '<svg viewBox="0 0 110 110">'+r+'</svg>'}
+function ticket(b){var l=lot(b.lot),d=document.getElementById("dlg"),f=document.getElementById("f");
+f.innerHTML='<div class="tk"><h3 style="font-size:26px">'+(b.st=="Completed"?"Receipt":"Parking ticket")+' #'+b.id+'</h3><div>'+esc(l.name)+' · Bay '+b.slot+(isEV(b.slot)?' ⚡':'')+'</div>'+qr("T"+b.id+b.veh)+'<div><b>'+esc(b.veh)+'</b></div><div class="mute">'+b.st+(b.fee?' · ₹'+b.fee:'')+'</div></div><div class="row"><button class="btn p" value="x">Close</button></div>';f.onsubmit=null;d.showModal()}
+
+function bays(){
+var h='<div class="legend"><span><i class="dot" style="background:var(--free)"></i>Free</span><span><i class="dot" style="background:var(--res)"></i>Reserved</span><span><i class="dot" style="background:var(--occ)"></i>Occupied</span></div>';
+S.lots.forEach(function(l){var f=l.slots.filter(function(s){return s.s=="free"}).length;
+h+='<section class="lot"><div class="lot-h"><div><h2>'+esc(l.name)+'</h2><span class="mute">'+esc(l.loc)+' · ₹'+l.rate+' per hour</span></div><div class="count" style="color:var(--'+(f?'free':'occ')+')">'+f+' of '+l.slots.length+' free</div></div><div class="bays">';
+l.slots.forEach(function(s){var c=s.s=="free"?"free":s.s=="res"?"res":"occ";
+h+='<button class="bay '+c+'" '+(c=="free"?'data-book="'+l.id+'|'+s.n+'"':'disabled')+' aria-label="Bay '+s.n+', '+c+'">'+(c=="free"?'':'<span class="car"></span>')+(isEV(s.n)?'<span class="ev">⚡</span>':'')+s.n+'</button>'});
+h+='</div></section>'});
+return h+'<p class="note">Tap a free bay to reserve it.</p>'}
+
+function mine(){
+var h='<h2 style="font-size:30px;margin-bottom:10px">Bookings</h2>';
+if(!S.bk.length)return h+'<p class="mute">No bookings yet. Go to Live bays and tap a free bay.</p>';
+h+='<input id="q" placeholder="Search by vehicle number" style="max-width:300px;margin-bottom:10px"><div class="tw"><table><tr><th>Lot</th><th>Bay</th><th>Vehicle</th><th>Status</th><th>Fee</th><th></th></tr>';
+S.bk.slice().reverse().forEach(function(b){var l=lot(b.lot),a='<button class="btn" data-tk="'+b.id+'">'+(b.st=="Completed"?"Receipt":"Ticket")+'</button> ';if(b.st=="Cancelled")a="";
+if(b.st=="Booked")a+='<button class="btn" data-in="'+b.id+'">Check in</button> <button class="btn" data-cx="'+b.id+'">Cancel</button>';
+if(b.st=="Checked in")a+='<button class="btn p" data-out="'+b.id+'">Check out</button>';
+h+='<tr data-v="'+esc(b.veh)+'"><td>'+esc(l?l.name:"")+'</td><td>'+b.slot+'</td><td>'+esc(b.veh)+'</td><td>'+b.st+'</td><td>'+(b.fee?'₹'+b.fee:'-')+'</td><td>'+a+'</td></tr>'});
+return h+'</table></div>'}
+
+function admin(){
+var done=S.bk.filter(function(b){return b.st=="Completed"}),rev=done.reduce(function(a,b){return a+b.fee},0);
+var h='<h2 style="font-size:30px">Admin</h2><div class="stat">₹'+rev+'</div><div class="mute">revenue from '+done.length+' completed stays</div>';
+h+='<h3 style="font-size:24px;margin:22px 0 4px">Add a parking lot</h3><form id="add" style="max-width:340px"><label>Name</label><input name="n" required><label>Location</label><input name="l" required><label>Hourly rate (₹)</label><input name="r" type="number" min="1" value="25" required><label>Number of bays</label><input name="c" type="number" min="1" max="60" value="10" required><div class="row"><button class="btn p">Add lot</button></div></form>';
+h+='<div class="row"><button class="btn" id="reset">Reset demo data</button></div>';
+return h}
+
+function render(){var v=document.getElementById("view");v.innerHTML=({home:home,bays:bays,mine:mine,rates:rates,insights:insights,help:help,admin:admin}[tab]||home)();if(tab=="rates")est();
+[].forEach.call(document.querySelectorAll("#tabs button"),function(b){b.setAttribute("aria-selected",b.dataset.t==tab)})}
+
+function book(ref){var p=ref.split("|"),l=lot(p[0]);var d=document.getElementById("dlg"),f=document.getElementById("f");
+f.innerHTML='<h3 style="font-size:26px">Reserve bay '+p[1]+'</h3><div class="mute">'+esc(l.name)+' · ₹'+l.rate+'/hour</div><label>Vehicle number</label><input id="veh" required placeholder="e.g. MH12 AB 1234"><label>Hours</label><input id="hrs" type="number" min="1" max="72" value="1"><div class="row"><button class="btn p" value="ok">Confirm</button><button class="btn" value="x" formnovalidate>Cancel</button></div>';
+d.showModal();
+f.onsubmit=function(e){if(e.submitter&&e.submitter.value=="x")return;var veh=document.getElementById("veh").value.trim().toUpperCase();if(!veh){e.preventDefault();return}
+slot({lot:l.id,slot:p[1]}).s="res";S.bk.push({id:S.nid++,lot:l.id,slot:p[1],veh:veh,hrs:+document.getElementById("hrs").value,st:"Booked",fee:0});save();tab="mine";render()}}
+
+document.addEventListener("click",function(e){var t=e.target.closest("button");if(!t)return;var d=t.dataset;
+if(d.t){tab=d.t;render();return}
+if(d.book){book(d.book);return}
+if(d.tk){ticket(S.bk.filter(function(x){return x.id==+d.tk})[0]);return}
+if(t.id=="th"){var r=document.documentElement,dk=r.dataset.theme?r.dataset.theme=="dark":matchMedia("(prefers-color-scheme:dark)").matches;r.dataset.theme=dk?"light":"dark";return}
+var id=+(d["in"]||d.out||d.cx),b=S.bk.filter(function(x){return x.id==id})[0];if(!b)return;var s=slot(b);
+if(d["in"]){b.st="Checked in";b.tin=Date.now();s.s="occ"}
+if(d.cx){b.st="Cancelled";s.s="free"}
+if(d.out){var h=Math.min(8,Math.max(1,Math.ceil((Date.now()-b.tin)/36e5)));b.fee=h*rateOf(lot(b.lot),b.slot);b.st="Completed";s.s="free"}
+if(d["in"]||d.cx||d.out){save();render()}
+if(t.id=="reset"){S=seed();save();render()}});
+document.addEventListener("submit",function(e){if(e.target.id!="add")return;e.preventDefault();var f=e.target.elements,s=[];
+for(var i=1;i<=+f.c.value;i++)s.push({n:"S"+i,s:"free"});
+S.lots.push({id:Date.now(),name:f.n.value,loc:f.l.value,rate:+f.r.value,slots:s});save();tab="bays";render()});
+document.addEventListener("input",function(e){if(e.target.id=="q"){var v=e.target.value.toUpperCase();[].forEach.call(document.querySelectorAll("tr[data-v]"),function(r){r.style.display=r.dataset.v.indexOf(v)>-1?"":"none"})}if(/^e(lot|hr|ev)$/.test(e.target.id))est()});
+function tick(){document.getElementById("clock").textContent=new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}
+load();render();tick();setInterval(tick,30000);
+</script>
+</body>
+</html>
